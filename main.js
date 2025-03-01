@@ -66,92 +66,71 @@ function update() {
   }
 }
 
-function drawSnakeSegment(x, y, type, dir) {
-  const radius = gridSize / 2;
-  const centerX = x * gridSize + radius;
-  const centerY = y * gridSize + radius;
-
-  ctx.fillStyle = type === 'head' ? '#00cc77' : 
-                  type === 'tail' ? '#009966' : '#00ff96';
-
-  if (type === 'body') {
-    // Draw straight body segment
-    ctx.fillRect(
-      x * gridSize,
-      y * gridSize,
-      gridSize,
-      gridSize
-    );
-    return;
-  }
-
-  ctx.beginPath();
-
-  if (type === 'head') {
-    // Draw head with rounded front
-    if (dir.x === 1) { // Right
-      ctx.arc(centerX + radius, centerY, radius, -Math.PI/2, Math.PI/2);
-      ctx.lineTo(centerX, centerY + radius);
-      ctx.lineTo(centerX, centerY - radius);
-    } else if (dir.x === -1) { // Left
-      ctx.arc(centerX - radius, centerY, radius, Math.PI/2, -Math.PI/2);
-      ctx.lineTo(centerX, centerY - radius);
-      ctx.lineTo(centerX, centerY + radius);
-    } else if (dir.y === 1) { // Down
-      ctx.arc(centerX, centerY + radius, radius, Math.PI, 0);
-      ctx.lineTo(centerX - radius, centerY);
-      ctx.lineTo(centerX + radius, centerY);
-    } else if (dir.y === -1) { // Up
-      ctx.arc(centerX, centerY - radius, radius, 0, Math.PI);
-      ctx.lineTo(centerX + radius, centerY);
-      ctx.lineTo(centerX - radius, centerY);
-    }
-  } else if (type === 'tail') {
-    // Draw tail with rounded end
-    if (dir.x === 1) { // Right
-      ctx.arc(centerX - radius, centerY, radius, Math.PI/2, -Math.PI/2);
-      ctx.lineTo(centerX, centerY - radius);
-      ctx.lineTo(centerX, centerY + radius);
-    } else if (dir.x === -1) { // Left
-      ctx.arc(centerX + radius, centerY, radius, -Math.PI/2, Math.PI/2);
-      ctx.lineTo(centerX, centerY + radius);
-      ctx.lineTo(centerX, centerY - radius);
-    } else if (dir.y === 1) { // Down
-      ctx.arc(centerX, centerY - radius, radius, 0, Math.PI);
-      ctx.lineTo(centerX + radius, centerY);
-      ctx.lineTo(centerX - radius, centerY);
-    } else if (dir.y === -1) { // Up
-      ctx.arc(centerX, centerY + radius, radius, Math.PI, 0);
-      ctx.lineTo(centerX - radius, centerY);
-      ctx.lineTo(centerX + radius, centerY);
-    }
-  }
-
-  ctx.closePath();
-  ctx.fill();
-
-  // Draw eyes on head
-  if (type === 'head') {
-    ctx.fillStyle = '#fff';
-    const eyeOffsetX = dir.x !== 0 ? radius - 5 : 5;
-    const eyeOffsetY = dir.y !== 0 ? radius - 5 : 5;
+function drawSnake() {
+  snake.forEach((segment, index) => {
+    const x = segment.x * gridSize;
+    const y = segment.y * gridSize;
     
-    ctx.beginPath();
-    if (dir.x === 1) { // Right
-      ctx.arc(centerX + radius - 5, centerY - 5, 2, 0, Math.PI * 2);
-      ctx.arc(centerX + radius - 5, centerY + 5, 2, 0, Math.PI * 2);
-    } else if (dir.x === -1) { // Left
-      ctx.arc(centerX - radius + 5, centerY - 5, 2, 0, Math.PI * 2);
-      ctx.arc(centerX - radius + 5, centerY + 5, 2, 0, Math.PI * 2);
-    } else if (dir.y === 1) { // Down
-      ctx.arc(centerX - 5, centerY + radius - 5, 2, 0, Math.PI * 2);
-      ctx.arc(centerX + 5, centerY + radius - 5, 2, 0, Math.PI * 2);
-    } else if (dir.y === -1) { // Up
-      ctx.arc(centerX - 5, centerY - radius + 5, 2, 0, Math.PI * 2);
-      ctx.arc(centerX + 5, centerY - radius + 5, 2, 0, Math.PI * 2);
+    // Base color
+    ctx.fillStyle = '#00cc77';
+    ctx.fillRect(x, y, gridSize, gridSize);
+    
+    // Reflection effect
+    const gradient = ctx.createLinearGradient(
+      x, y, 
+      x + gridSize, y + gridSize
+    );
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x, y, gridSize, gridSize);
+    
+    // Highlight for head
+    if (index === 0) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.beginPath();
+      ctx.arc(
+        x + gridSize/2,
+        y + gridSize/2,
+        gridSize/3, 
+        0, Math.PI * 2
+      );
+      ctx.fill();
     }
-    ctx.fill();
-  }
+  });
+}
+
+function drawFood() {
+  const x = food.x * gridSize;
+  const y = food.y * gridSize;
+  
+  // Base color
+  ctx.fillStyle = '#ff0044';
+  ctx.beginPath();
+  ctx.arc(
+    x + gridSize/2,
+    y + gridSize/2,
+    gridSize/2, 
+    0, Math.PI * 2
+  );
+  ctx.fill();
+  
+  // Reflection effect
+  const gradient = ctx.createRadialGradient(
+    x + gridSize/2,
+    y + gridSize/2,
+    0,
+    x + gridSize/2,
+    y + gridSize/2,
+    gridSize/2
+  );
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+  gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  
+  ctx.fillStyle = gradient;
+  ctx.fill();
 }
 
 function draw() {
@@ -160,34 +139,10 @@ function draw() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
   // Draw snake
-  for (let i = 0; i < snake.length; i++) {
-    const segment = snake[i];
-    let type = 'body';
-    let dir = direction;
-    
-    if (i === 0) {
-      type = 'head';
-      dir = direction;
-    } else if (i === snake.length - 1) {
-      type = 'tail';
-      dir = {
-        x: segment.x - snake[i-1].x,
-        y: segment.y - snake[i-1].y
-      };
-    }
-    
-    drawSnakeSegment(segment.x, segment.y, type, dir);
-  }
+  drawSnake();
   
   // Draw food
-  ctx.fillStyle = '#ff0044';
-  ctx.beginPath();
-  ctx.arc(
-    food.x * gridSize + gridSize/2,
-    food.y * gridSize + gridSize/2,
-    gridSize/2, 0, Math.PI * 2
-  );
-  ctx.fill();
+  drawFood();
 }
 
 function gameOver() {
